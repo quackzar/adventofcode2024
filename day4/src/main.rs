@@ -16,8 +16,8 @@ fn main() {
     let res = solve_1(&input);
     println!("Solution 1: {res}");
 
-    // let res = solve_2(&input);
-    // println!("Solution 2: {res}");
+    let res = solve_2(&input);
+    println!("Solution 2: {res}");
 }
 
 fn new_parser() -> impl Coroutine<char, Yield = (), Return = ()> {
@@ -186,9 +186,36 @@ fn solve_2(input: &str) -> u32 {
             let j = j as isize;
 
 
+            let a = matrix.get(i,j) == Some('A')
+                && matrix.get(i+1,j+1) == Some('M')
+                && matrix.get(i-1,j-1) == Some('S')
+                && matrix.get(i+1,j-1) == Some('M')
+                && matrix.get(i-1,j+1) == Some('S');
+
+            let b = matrix.get(i,j) == Some('A')
+                && matrix.get(i+1,j+1) == Some('S')
+                && matrix.get(i-1,j-1) == Some('M')
+                && matrix.get(i+1,j-1) == Some('M')
+                && matrix.get(i-1,j+1) == Some('S');
+
+            let c = matrix.get(i,j) == Some('A')
+                && matrix.get(i+1,j+1) == Some('S')
+                && matrix.get(i-1,j-1) == Some('M')
+                && matrix.get(i+1,j-1) == Some('S')
+                && matrix.get(i-1,j+1) == Some('M');
+
+            let d = matrix.get(i,j) == Some('A')
+                && matrix.get(i+1,j+1) == Some('M')
+                && matrix.get(i-1,j-1) == Some('S')
+                && matrix.get(i+1,j-1) == Some('S')
+                && matrix.get(i-1,j+1) == Some('M');
 
 
 
+
+            if a || b || c || d {
+                found += 1;
+            }
         }
     }
 
