@@ -1,4 +1,7 @@
-use std::{collections::{BTreeMap, BTreeSet}, isize};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    isize,
+};
 
 fn main() {
     use std::io::Read;
@@ -10,124 +13,123 @@ fn main() {
     println!("Solution 2: {res}");
 }
 
-
 fn parse(input: &str) -> BTreeMap<(isize, isize), char> {
-     input.lines().enumerate().flat_map(|(y, line)| {
-        line.chars().enumerate().map(move |(x, c)| {
-            ((x as isize, y as isize), c)
+    input
+        .lines()
+        .enumerate()
+        .flat_map(|(y, line)| {
+            line.chars()
+                .enumerate()
+                .map(move |(x, c)| ((x as isize, y as isize), c))
         })
-    }).collect()
+        .collect()
 }
 
 fn solve_1(input: &str) -> u32 {
     let map = parse(input);
-    let (pos,_) = map.iter().find(|(pos,c)| **c=='^').unwrap();
+    visited(&map).len() as u32
+}
 
-    let mut dir =  Direction::Up;
+fn visited(map: &BTreeMap<(isize, isize), char>) -> BTreeSet<(isize, isize)> {
+    let (pos, _) = map.iter().find(|(pos, c)| **c == '^').unwrap();
+    let mut pos = *pos;
+    let mut dir = Direction::Up;
     let mut visited = BTreeSet::new();
-    let mut x = pos.0;
-    let mut y = pos.1;
-    loop {
-        visited.insert((x,y));
-        match dir {
-            Direction::Up => {
-                let Some(tile) = map.get(&(x,y-1)) else {break};
-                if *tile == '#' {
-                    dir = Direction::Right;
-                    continue;
-                }
-                y -= 1;
-            },
-            Direction::Right => {
-                let Some(tile) = map.get(&(x+1,y)) else {break};
-                if *tile == '#' {
-                    dir = Direction::Down;
-                    continue;
-                }
-                x += 1;
-            },
-            Direction::Down => {
-                let Some(tile) = map.get(&(x,y+1)) else {break};
-                if *tile == '#' {
-                    dir = Direction::Left;
-                    continue;
-                }
-                y += 1;
-            },
-            Direction::Left => {
-                let Some(tile) = map.get(&(x-1,y)) else {break};
-                if *tile == '#' {
-                    dir = Direction::Up;
-                    continue;
-                }
-                x -= 1;
-            },
+    visited.insert(pos);
+    while !walk(map, &mut pos, &mut dir) {
+        visited.insert(pos);
+    }
+    visited
+}
+
+fn walk(
+    map: &BTreeMap<(isize, isize), char>,
+    (x, y): &mut (isize, isize),
+    dir: &mut Direction,
+) -> bool {
+    match dir {
+        Direction::Up => {
+            let Some(tile) = map.get(&(*x, *y - 1)) else {
+                return true;
+            };
+            if *tile == '#' {
+                *dir = Direction::Right;
+            } else {
+                *y -= 1;
+            }
+        }
+        Direction::Right => {
+            let Some(tile) = map.get(&(*x + 1, *y)) else {
+                return true;
+            };
+            if *tile == '#' {
+                *dir = Direction::Down;
+            } else {
+                *x += 1;
+            }
+        }
+        Direction::Down => {
+            let Some(tile) = map.get(&(*x, *y + 1)) else {
+                return true;
+            };
+            if *tile == '#' {
+                *dir = Direction::Left;
+            } else {
+                *y += 1;
+            }
+        }
+        Direction::Left => {
+            let Some(tile) = map.get(&(*x - 1, *y)) else {
+                return true;
+            };
+            if *tile == '#' {
+                *dir = Direction::Up;
+            } else {
+                *x -= 1;
+            }
         }
     }
-    visited.len() as u32
+    false
 }
 
 fn solve_2(input: &str) -> u32 {
-    let map = parse(input);
-    let (pos,_) = map.iter().find(|(pos,c)| **c=='^').unwrap();
-
-    let mut dir =  Direction::Up;
-    let mut visited = BTreeMap::new();
-    let mut x = pos.0;
-    let mut y = pos.1;
-
-    let mut revisits = 0;
-    loop {
-        if let Some(redir) =  visited.get(&(x,y)) {
-            if dir == Direction::Left && *redir == Direction::Up ||
-                dir == Direction::Up && *redir == Direction::Right ||
-                dir == Direction::Right && *redir == Direction::Down ||
-                dir == Direction::Down && *redir == Direction::Left {
-                    revisits += 1;
+    fn is_loop(map: BTreeMap<(isize, isize), char>, initial: (isize, isize)) -> bool {
+        let mut path = BTreeSet::new();
+        let mut pos = initial;
+        let mut dir = Direction::Up;
+        path.insert((pos, dir));
+        while !walk(&map, &mut pos, &mut dir) {
+            if path.contains(&(pos, dir)) {
+                return true
             }
+            path.insert((pos, dir));
         }
-        visited.insert((x,y), dir);
-        match dir {
-            Direction::Up => {
-                let Some(tile) = map.get(&(x,y-1)) else {break};
-                if *tile == '#' {
-                    dir = Direction::Right;
-                    continue;
-                }
-                y -= 1;
-            },
-            Direction::Right => {
-                let Some(tile) = map.get(&(x+1,y)) else {break};
-                if *tile == '#' {
-                    dir = Direction::Down;
-                    continue;
-                }
-                x += 1;
-            },
-            Direction::Down => {
-                let Some(tile) = map.get(&(x,y+1)) else {break};
-                if *tile == '#' {
-                    dir = Direction::Left;
-                    continue;
-                }
-                y += 1;
-            },
-            Direction::Left => {
-                let Some(tile) = map.get(&(x-1,y)) else {break};
-                if *tile == '#' {
-                    dir = Direction::Up;
-                    continue;
-                }
-                x -= 1;
-            },
+        false
+    }
+
+    let map = parse(input);
+    let (initial, _) = map.iter().find(|(_pos, c)| **c == '^').unwrap();
+    let mut visited = visited(&map);
+    let mut sum = 0;
+    visited.remove(initial);
+
+    for pos in visited {
+        let mut map = map.clone();
+        *map.get_mut(&pos).unwrap() = '#';
+        if is_loop(map, *initial) {
+            sum += 1;
         }
     }
-    revisits
-
+    sum
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Direction { Up, Down, Left, Right }
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
+}
 
 #[cfg(test)]
 const EXAMPLE: &str = "\
@@ -146,7 +148,6 @@ const EXAMPLE: &str = "\
 fn test_1() {
     assert_eq!(solve_1(EXAMPLE), 41);
 }
-
 
 #[test]
 fn test_2() {
