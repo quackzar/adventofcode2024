@@ -1,7 +1,4 @@
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    isize,
-};
+use std::collections::{BTreeMap, BTreeSet};
 
 fn main() {
     use std::io::Read;
