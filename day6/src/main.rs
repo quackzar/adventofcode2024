@@ -90,12 +90,12 @@ fn walk(
 }
 
 fn solve_2(input: &str) -> u32 {
-    fn is_loop(map: BTreeMap<(isize, isize), char>, initial: (isize, isize)) -> bool {
+    fn is_loop(map: &BTreeMap<(isize, isize), char>, initial: (isize, isize)) -> bool {
         let mut path = BTreeSet::new();
         let mut pos = initial;
         let mut dir = Direction::Up;
         path.insert((pos, dir));
-        while !walk(&map, &mut pos, &mut dir) {
+        while !walk(map, &mut pos, &mut dir) {
             if path.contains(&(pos, dir)) {
                 return true
             }
@@ -104,18 +104,18 @@ fn solve_2(input: &str) -> u32 {
         false
     }
 
-    let map = parse(input);
+    let mut map = parse(input);
     let (initial, _) = map.iter().find(|(_pos, c)| **c == '^').unwrap();
+    let initial = *initial;
     let mut visited = visited(&map);
     let mut sum = 0;
-    visited.remove(initial);
-
+    visited.remove(&initial);
     for pos in visited {
-        let mut map = map.clone();
         *map.get_mut(&pos).unwrap() = '#';
-        if is_loop(map, *initial) {
+        if is_loop(&map, initial) {
             sum += 1;
         }
+        *map.get_mut(&pos).unwrap() = '.';
     }
     sum
 }
