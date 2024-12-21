@@ -1,4 +1,4 @@
-use std::{fmt::Display, u16};
+use std::{fmt::Display, iter};
 
 use nonmax::NonMaxU16;
 
@@ -30,7 +30,7 @@ fn solve_2(input: &str) -> u64 {
     checksum(&disk)
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Slot {
     Used(NonMaxU16),
     Free,
@@ -107,12 +107,13 @@ fn compact(disk: &mut Disk) {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct Segment {
     size: u16,
     file: Slot,
 }
 
+#[derive(Debug)]
 struct RichDisk { // this is almost just the compact format again
     data: Vec<Segment>,
 }
@@ -140,7 +141,7 @@ fn enrich(disk: &Disk) -> RichDisk {
 fn impoverish(rich: &RichDisk) -> Disk {
     let mut disk = Vec::new();
     for &Segment { size, file } in &rich.data {
-        disk.extend((0..size).map(|_| file));
+        disk.extend(iter::from_fn(|| Some(file)).take(size as usize));
     }
     Disk {
         data: disk.into_boxed_slice(),
@@ -174,11 +175,12 @@ fn defragment(disk: &mut RichDisk) {
                 disk[last] = Segment { file: Slot::Free, ..segment};
                 let newfree = freespace - segment.size;
                 if newfree > 0 {
-                    disk.insert(needle, Segment {
+                    disk.insert(needle + 1, Segment {
                         size: newfree,
                         file: Slot::Free,
                     });
                 }
+                needle += 1;
             }
             Some(Segment {
                 size: _,
