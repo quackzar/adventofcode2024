@@ -1,5 +1,5 @@
 #![feature(let_chains)]
-use std::{borrow::{Borrow, Cow}, collections::{BTreeMap, BTreeSet}, rc::Rc};
+use std::{borrow::Cow, collections::{BTreeMap, BTreeSet}};
 
 
 fn main() {
@@ -34,7 +34,7 @@ fn score(start: (isize, isize), map: &BTreeMap<(isize, isize), u8>) -> (u64, u64
     let mut trails = BTreeSet::new();
 
     let mut stack = Vec::new();
-    let initial = Rc::new(vec![start]);
+    let initial = Cow::from(vec![start]);
     stack.push(initial);
     while let Some(mut trail) = stack.pop() {
         let (x, y ) = *trail.last().unwrap();
@@ -42,7 +42,7 @@ fn score(start: (isize, isize), map: &BTreeMap<(isize, isize), u8>) -> (u64, u64
         for (dx, dy) in [(0, 1), (1, 0), (0, -1), (-1, 0)] {
             let pos = (x + dx, y + dy);
             if let Some(&h) = map.get(&pos) && h == current_height + 1 {
-                Rc::make_mut(&mut trail).push(pos);
+                Cow::to_mut(&mut trail).push(pos);
                 if h == 9 {
                     tops.insert(pos);
                     trails.insert(trail.clone());
