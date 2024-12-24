@@ -1,6 +1,7 @@
 #![feature(linked_list_cursors)]
 #![feature(allocator_api)]
 #![feature(iter_collect_into)]
+#![feature(let_chains)]
 
 #[global_allocator]
 static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
@@ -58,46 +59,67 @@ fn blink<A: Allocator>(stones: &mut LinkedList<u64, A>) {
 
 fn solve_2(input: &str) -> u64 {
     let stones = parse(input, Global);
-
     let mut total = 0;
 
+
     let mut cache = BTreeMap::new();
-
     for stone in stones {
-        let steps = 25;
-        let mut queue = VecDeque::new();
-        queue.push_back(stone);
-        for _ in 0..steps {
-            let length = queue.len();
-            for _ in 0..length {
-                let stone = queue.pop_front().unwrap();
-                match stone {
-                    0 => {
-                        queue.push_back(1);
-                    }
-                    n if num_digits(n) & 1 == 0 => {
-                        let half_digits = num_digits(n) / 2;
-                        let multiplier = 10_u64.pow(half_digits);
-                        let left = n / multiplier;
-                        let right = n - left * multiplier;
+        let total_steps = 75;
+        let mut queue = Vec::new();
+        queue.push((stone, total_steps));
 
-                        queue.push_back(left);
-                        queue.push_back(right);
+        while let Some((stone, step)) = queue.pop() {
+            if step == 0 {
+                cache.insert((stone, step), 1);
+                continue;
+            }
+
+            match stone {
+                0 => {
+                    if let Some(&val) = cache.get(&(1, step - 1)) {
+                        cache.insert((stone, step), val);
+                    } else {
+                        queue.push((stone, step));
+                        queue.push((1, step - 1));
                     }
-                    n => {
-                        queue.push_back(n * 2024);
+                }
+                n if num_digits(n) & 1 == 0 => {
+                    let half_digits = num_digits(n) / 2;
+                    let multiplier = 10_u64.pow(half_digits);
+                    let left = n / multiplier;
+                    let right = n - left * multiplier;
+
+                    if let Some(&left_val) = cache.get(&(left, step - 1))
+                    && let Some(&right_val) = cache.get(&(right, step - 1)) {
+                        cache.insert((stone, step), left_val + right_val);
+                    } else {
+                        queue.push((stone, step));
+                        if !cache.contains_key(&(left, step-1)) {
+                            queue.push((left, step-1));
+                        }
+                        if !cache.contains_key(&(right, step-1)) {
+                            queue.push((right, step-1));
+                        }
+
+                    }
+
+
+                }
+                n => {
+                    if let Some(&val) = cache.get(&(n * 2024, step - 1)) {
+                        cache.insert((stone, step), val);
+                    } else {
+                        queue.push((stone, step));
+                        queue.push((n * 2024, step - 1));
                     }
                 }
             }
         }
-        let subtotal = queue.len() as u64;
-        cache.insert(stone, subtotal);
 
-        total += subtotal;
-        drop(queue);
+        total += cache.get(&(stone, total_steps)).unwrap();
+
     }
     total
-
 }
 
 fn parse<A: Allocator>(input: &str, alloc: A) -> LinkedList<u64, A> {
